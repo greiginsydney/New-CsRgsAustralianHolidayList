@@ -1,6 +1,6 @@
 ﻿<#  
 .SYNOPSIS  
-	This script creates RGS holidaysets for Australian states for the period 2017 to the end of 2018
+	This script creates RGS holidaysets for Australian states based on live data from the Australian Government website
 
 
 .DESCRIPTION  
@@ -11,13 +11,26 @@
 	    
 	
 .NOTES  
-    Version      	   	: 2.0
-	Date			    : 8/12/2017
+    Version      	   	: 2.01
+	Date			    : 9/12/2017
 	Lync Version		: Tested against Skype4B Server 2015 and Lync Server 2013
     Author    			: James Arber
 	Header stolen from  : Greig Sheridan who stole it from Pat Richard's amazing "Get-CsConnections.ps1"
 
-	Revision History	: v2.0: Update for XML Support
+	Revision History	: v2.01: Migrated to GitHub
+                              : Minor Typo corrections
+                              : Check for and prompt user for updates
+                              : Fixed a bug with multiple pool selction
+                              : Fixed issues with double spaced event names
+                              : Added better timeout handling to XML downloads
+                              : Added better user feedback when downloading XML file
+                              : Fixed bug with proxy detection failing to execute
+                              : Removed redundant code for XML lookup
+                              : Fixed an unattened run bug
+                              : Fixed commandline switch descriptions
+
+
+                        : v2.0: Update for XML Support
 							  : Added Autodetecton of single RGS pool
 							  : Complete Rewrite of existing rule rewrite code , Should make less red text now.
 							  : Added Region detection, Will prompt to change regions or try to use US date format
@@ -65,10 +78,26 @@
 .PARAMETER -ServiceID <RgsIdentity> 
     Service where the new holiday set will be hosted. For example: -ServiceID "service:ApplicationServer:SFBFE01.Skype4badmin.com/1987d3c2-4544-489d-bbe3-59f79f530a83".
 	To obtain your service ID, run Get-CsRgsConfiguration -Identity FEPool01.skype4badmin.com
-	If you dont specify a ServiceID, the script will try and guess the frontend to put the holidays on.
+	If you dont specify a ServiceID or FrontEndPool, the script will try and guess the frontend to put the holidays on.
+
+.PARAMETER -FrontEndPool <FrontEnd FQDN> 
+    Frontend Pool where the new holiday set will be hosted. 
+    If you dont specify a ServiceID or FrontEndPool, the script will try and guess the frontend to put the holidays on.
+    Specifiying this instead of ServiceID will cause the script to confirm the pool unless -Unattended is specified
 
 .PARAMETER -RGSPrepend <String>
     String to Prepend to Listnames to suit your enviroment
+
+.PARAMETER -DisableScriptUpdate
+    Stops the script from checking online for an update and prompting the user to download. Ideal for scheduled tasks
+
+.PARAMETER -RemoveExistingRules
+    Deprecated. Script now updates existing rulesets rather than removing them. Kept for backwards compatability
+
+.PARAMETER -Unattended
+    Assumes yes for pool selection critera when multiple pools are present and Poolfqdn is specified.
+    Also stops the script from checking for updates
+    Check the script works before using this!
 
 .LINK  
     http://www.skype4badmin.com/australian-holiday-rulesets-for-response-group-service/
@@ -80,7 +109,7 @@
 
 	PS C:\> New-CsRgsAustralianHolidayList.ps1 
 
-	PS C:\> New-CsRgsAustralianHolidayList.ps1 -RemoveExistingRules
+	PS C:\> New-CsRgsAustralianHolidayList.ps1 -DisableScriptUpdate -FrontEndPool AUMELSFBFE.Skype4badmin.local -Unattended
 
 #>
 # Script Config
@@ -89,14 +118,15 @@ param(
 	[Parameter(Mandatory=$false, Position=1)] $ServiceID,
 	[Parameter(Mandatory=$false, Position=2)] $RGSPrepend,
 	[Parameter(Mandatory=$false, Position=3)] $FrontEndPool,
-	[Parameter(Mandatory=$false, Position=4)] $DisableScriptUpdate,
-	[Parameter(Mandatory=$false, Position=5)] $RemoveExistingRules
+	[Parameter(Mandatory=$false, Position=4)] [switch]$DisableScriptUpdate,
+    [Parameter(Mandatory=$false, Position=4)] [switch]$Unattended,
+	[Parameter(Mandatory=$false, Position=5)] [switch]$RemoveExistingRules
 	)
 #region config
  
     $MaxCacheAge = 7 # Max age for XML cache, older than this # days will force info refresh
 	$SessionCache = Join-Path $PSScriptRoot 'AustralianHolidays.xml' #Filename for the XML data
-	$Version = 2.0
+	[single]$Version = "2.01"
 #endregion config
 
 
@@ -122,18 +152,14 @@ Function Get-IEProxy {
         }
     }
 
-Function Get-AustralianDateXML {
 
-
-
-}
 #endregion Functions
 
 
 
 
 #Define Listnames
-Write-Host "Info: New-CsRgsAustralianHolidayList.ps1 $version" -ForegroundColor Green
+Write-Host "Info: New-CsRgsAustralianHolidayList.ps1 Version $version" -ForegroundColor Green
 $National = $RGSPrepend+"National"
 $Vic = $RGSPrepend+"Victoria"
 $NSW = $RGSPrepend+"New South Wales"
@@ -154,9 +180,11 @@ $allstates += $NT
 $allstates += $SA
 $allstates += $WA
 $allstates += $TAS
-
+if ($Unattended) {$DisableScriptUpdate = $true}
 if ($RemoveExistingRules -eq $true) {
 	Write-Warning "RemoveExistingRules parameter set to True. Script will automatically delete existing entries from rules"
+    Write-Host "Info: Pausing for 5 seconds" -ForegroundColor Green
+    start-sleep 5
 	}
 #Get Proxy Details
 	    $ProxyURL = Get-IEProxy
@@ -169,7 +197,51 @@ if ($RemoveExistingRules -eq $true) {
 
 if ($DisableScriptUpdate -eq $false) {
 	Write-Host "Info: Checking for Script Update" -ForegroundColor Green #todo
-	Invoke-WebRequest -Uri 'http://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml' -TimeoutSec 20 -OutFile $SessionCache -Proxy $ProxyURL -PassThru
+    $GitHubScriptVersion = Invoke-WebRequest https://raw.githubusercontent.com/atreidae/New-CsRgsAustralianHolidayList/master/version -TimeoutSec 10 -Proxy $ProxyURL
+        If ($GitHubScriptVersion.Content.length -eq 0) {
+
+            Write-Warning "Error checking for new version. You can check manualy here"
+            Write-Warning "http://www.skype4badmin.com/australian-holiday-rulesets-for-response-group-service/"
+            Write-Host "Info: Pausing for 5 seconds" -ForegroundColor Green
+            start-sleep 5
+            }
+        else { 
+                if ([single]$GitHubScriptVersion.Content -gt [single]$version) {
+                 Write-Host "Info: New Version Available" -ForegroundColor Green
+                    #New Version available
+
+                    #Prompt user to download
+				$title = "Update Available"
+				$message = "an update to this script is available, did you want to download it?"
+
+				$yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", `
+					"Launches a browser window with the update"
+
+				$no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", `
+					"No thanks."
+
+				$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
+
+				$result = $host.ui.PromptForChoice($title, $message, $options, 0) 
+
+				switch ($result)
+					{
+						0 {Write-Host "Info: User opted to download update" -ForegroundColor Green
+							start "http://www.skype4badmin.com/australian-holiday-rulesets-for-response-group-service/"
+							Write-Warning "Exiting script"
+							Exit
+						}
+						1 {Write-Host "Info: User opted to skip update" -ForegroundColor Green
+							
+							}
+							
+					}
+                 }   
+                 Else{
+                 Write-Host "Info: Script is up to date" -ForegroundColor Green
+                 }
+        
+	       }
 
 	}
 
@@ -349,7 +421,7 @@ If ($ServiceID -eq $null) {
 			$index--	#Undo that last increment
 			Write-Host
 			Write-Host "Choose the Front End Pool you wish to use"
-			[int]$chosen = read-host "Or any other value to quit"
+			$chosen = read-host "Or any other value to quit"
 
 			if ($chosen -notmatch '^\d$') {Exit}
 			if ([int]$chosen -lt 0) {Exit}
@@ -368,7 +440,7 @@ If ($ServiceID -eq $null) {
 
 
 
-
+if (!$Unattended) {
 	#Prompt user to confirm
 		$title = "Use this Pool?"
 		$message = "Use the Response Group Server on $poolfqdn ?"
@@ -390,6 +462,7 @@ If ($ServiceID -eq $null) {
 				1 {Write-Warning "Couldnt Autolocate RGS pool. Abort script"
 					Throw "Couldnt Autolocate RGS pool. Abort script"}
 			}
+        }
 
 	} 
 
@@ -501,7 +574,7 @@ foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
 
 #Find dates that are in every state
 
- Write-Host "Info: Finding National Holidays (This takes a while)" -ForegroundColor Green
+ Write-Host "Info: Finding National Holidays (This can take a while)" -ForegroundColor Green
 $i =0
 $RawNatHolidayset = $null
 $NatHolidayset = $null
@@ -558,6 +631,7 @@ foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
 			Write-host "$FailedItem failed. The error message was $ErrorMessage" -ForegroundColor Red
 			Throw $errormessage}
 
-Write-Host "Info: Script Exited Normally!" -ForegroundColor Green
-
-               
+Write-Host ""
+Write-Host ""
+Write-Host "Info: Looks like everything went okay. Here are your current RGS Holiday Sets" -ForegroundColor Green
+Get-CsRgsHolidaySet | select name

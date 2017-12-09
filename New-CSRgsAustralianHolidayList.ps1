@@ -354,7 +354,7 @@ If ($ServiceID -eq $null) {
 			if ($chosen -notmatch '^\d$') {Exit}
 			if ([int]$chosen -lt 0) {Exit}
 			if ([int]$chosen -gt $index) {Exit}
-			$FrontEndPool = $pool[$chosen].PoolFqdn
+			$FrontEndPool = $pools[$chosen].PoolFqdn
 			$Poolfqdn = $FrontEndPool
 			$RGSIDs = (Get-CsRgsConfiguration -Identity $FrontEndPool)
 		}
@@ -552,7 +552,7 @@ foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
  Write-Host "Info: Finished adding events" -ForegroundColor Green
  Write-host "Info: Writing $National to Database" -ForegroundColor Green
  Try {Set-CsRgsHolidaySet -Instance $holidayset}
-            Catch {Write-Warning "Something went wrong attempting to commit holidayset to datebase"
+            Catch {Write-Warning "Something went wrong attempting to commit holidayset to database"
 			$ErrorMessage = $_.Exception.Message
 			$FailedItem = $_.Exception.ItemName
 			Write-host "$FailedItem failed. The error message was $ErrorMessage" -ForegroundColor Red

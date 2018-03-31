@@ -1,4 +1,4 @@
-#New-CSRgsAustralianHolidayList
+# New-CSRgsAustralianHolidayList
 This script creates RGS holidaysets for Australian states based on live data from the Australian Government website
 
 

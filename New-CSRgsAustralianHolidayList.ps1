@@ -132,7 +132,7 @@ param(
 	[Parameter(Mandatory=$false, Position=6)] [string]$LogFileLocation
 	)
 #region config
- 
+	[Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
     $MaxCacheAge = 7 # Max age for XML cache, older than this # days will force info refresh
 	$SessionCache = Join-Path $PSScriptRoot 'AustralianHolidays.xml' #Filename for the XML data
 	If (!$LogFileLocation) {$LogFileLocation = $PSCommandPath -replace ".ps1",".log"}

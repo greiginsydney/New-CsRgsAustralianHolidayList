@@ -112,16 +112,16 @@ New-CsRgsAustralianHolidayList.ps1 creates multiple new instances of the Microso
 
 
 ## Disclaimer					
-	Disclaimer   		: Whilst I take considerable effort to ensure this script is error free and wont harm your enviroment.
-								I have no way to test every possible senario it may be used in. I provide these scripts free
-								to the Lync and Skype4B community AS IS without any warranty on its appropriateness for use in
-								your enviroment. I disclaim all implied warranties including,
-  								without limitation, any implied warranties of merchantability or of fitness for a particular
-  								purpose. The entire risk arising out of the use or performance of the sample scripts and
-  								documentation remains with you. In no event shall I be liable for any damages whatsoever
-  								(including, without limitation, damages for loss of business profits, business interruption,
-  								loss of business information, or other pecuniary loss) arising out of the use of or inability
-  								to use the script or documentation.
+Whilst I take considerable effort to ensure this script is error free and wont harm your enviroment
+I have no way to test every possible senario it may be used in. I provide these scripts free
+to the Lync and Skype4B community AS IS without any warranty on its appropriateness for use in
+your enviroment. I disclaim all implied warranties including,
+without limitation, any implied warranties of merchantability or of fitness for a particular
+purpose. The entire risk arising out of the use or performance of the sample scripts and
+documentation remains with you. In no event shall I be liable for any damages whatsoever
+(including, without limitation, damages for loss of business profits, business interruption,
+loss of business information, or other pecuniary loss) arising out of the use of or inability
+to use the script or documentation.
 
 								
 ## Acknowledgements

@@ -21,7 +21,7 @@ Author    			: James Arber
 Header stolen from  : Greig Sheridan who stole it from Pat Richard's amazing "Get-CsConnections.ps1"
 
 
-##Update History
+## Update History
 
 **:v2.10: The Supportability Build**
 Added Script logging

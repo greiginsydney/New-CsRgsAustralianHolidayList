@@ -21,6 +21,9 @@
                               : Updated to use my new autoupdate code
                               : Added ability to switch between devel/master branches
                               : Added timezone offset detection / warning
+							  : Added SSL support for the new Govt website requirements
+
+
 
 						: v2.01: Migrated to GitHub
                               : Minor Typo corrections
@@ -357,7 +360,7 @@ Write-Log "Checking for XML file" -severity 1
 
         Write-Log 'Downloading Date list from Australian Government Website' -severity 1
         Try {
-            Invoke-WebRequest -Uri 'http://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml' -TimeoutSec 20 -OutFile $SessionCache -Proxy $ProxyURL -PassThru
+            Invoke-WebRequest -Uri 'https://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml' -TimeoutSec 20 -OutFile $SessionCache -Proxy $ProxyURL -PassThru
              Write-Log 'XML file downloaded. Reading data' -severity 1
                 [xml]$XMLdata = Get-Content -Path $SessionCache 
                 $EventCount = ($XMLdata.OuterXml | select-string "<event" -AllMatches)
@@ -373,7 +376,7 @@ Write-Log "Checking for XML file" -severity 1
         Catch {
 			Write-log "An error occurred attempting to download XML file automatically" -severity 3
 			Write-log 'Download the file from the URI below, name it "AustralianHolidays.xml" and place it in the same folder as this script' -severity 3
-			Write-Log "http://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml" -ForegroundColor Blue
+			Write-Log "https://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml" -ForegroundColor Blue
 			Throw ('Problem retrieving XML file {0}' -f $error[0])
             Exit 1
 			}

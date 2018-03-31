@@ -10,13 +10,18 @@
 	    
 	
 .NOTES  
-    Version      	   	: 2.01
-	Date			    : 9/12/2017
+    Version      	   	: 2.10
+	Date			    : 31/03/2018
 	Lync Version		: Tested against Skype4B Server 2015 and Lync Server 2013
     Author    			: James Arber
 	Header stolen from  : Greig Sheridan who stole it from Pat Richard's amazing "Get-CsConnections.ps1"
 
-	Revision History	: v2.01: Migrated to GitHub
+	Revision History	: v2.1: Added Script logging
+                              : Updated to use my new autoupdate code
+                              : Added ability to switch between devel/master branches
+                              : Added timezone offset detection / warning
+
+						: v2.01: Migrated to GitHub
                               : Minor Typo corrections
                               : Check for and prompt user for updates
                               : Fixed a bug with multiple pool selction

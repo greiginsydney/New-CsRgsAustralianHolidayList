@@ -285,7 +285,8 @@ Write-Host "Info: Checking for XML file" -ForegroundColor Green
 
         Write-Host 'Info: Downloading Date list from Australian Government Website' -ForegroundColor Green
         Try {
-            Invoke-WebRequest -Uri 'http://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml' -TimeoutSec 20 -OutFile $SessionCache -Proxy $ProxyURL -PassThru
+	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest -Uri 'http://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml' -TimeoutSec 20 -OutFile $SessionCache -Proxy $ProxyURL #-PassThru
              Write-Host 'Info: XML file downloaded. Reading data' -ForegroundColor Green
                 [xml]$XMLdata = Get-Content -Path $SessionCache 
                 $EventCount = ($XMLdata.OuterXml | select-string "<event" -AllMatches)
@@ -547,7 +548,7 @@ foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
 		Write-Host "Info: Finished adding events" -ForegroundColor Green
         Write-host "Info: Writing $StateName to Database" -ForegroundColor Green
         Try {Set-CsRgsHolidaySet -Instance $holidayset}
-            Catch {Write-Warning "Something went wrong attempting to commit holidayset to datebase"
+            Catch {Write-Warning "Something went wrong attempting to commit holidayset to database"
 			$ErrorMessage = $_.Exception.Message
 			$FailedItem = $_.Exception.ItemName
 			Write-host "$FailedItem failed. The error message was $ErrorMessage" -ForegroundColor Red

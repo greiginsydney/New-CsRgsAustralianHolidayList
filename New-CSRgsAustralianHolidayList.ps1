@@ -12,7 +12,7 @@
 	
 .NOTES  
     Version      	   	: 2.10
-	Date			    : 31/3/2018
+	Date			    : 11/05/2018
 	Lync Version		: Tested against Skype4B Server 2015 and Lync Server 2013
     Author    			: James Arber
 	Header stolen from  : Greig Sheridan who stole it from Pat Richard's amazing "Get-CsConnections.ps1"
@@ -138,7 +138,7 @@ param(
 	If (!$LogFileLocation) {$LogFileLocation = $PSCommandPath -replace ".ps1",".log"}
 	[single]$ScriptVersion = "2.10"
 	[string]$GithubRepo = "New-CsRgsAustralianHolidayList"
-	[string]$GithubBranch = "devel" #todo
+	[string]$GithubBranch = "master" #todo
 	[string]$BlogPost = "http://www.skype4badmin.com/australian-holiday-rulesets-for-response-group-service/"
 #endregion config
 

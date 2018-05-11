@@ -12,7 +12,7 @@ Holiday Data taken from http://www.australia.gov.au/about-australia/special-date
 ## NOTES  
  Version      	   	: 2.10
 
-Date			    : 31/03/2018
+Date			    : 11/05/2018
 
 Lync Version		: Tested against Skype4B Server 2015 and Lync Server 2013
 
@@ -24,43 +24,44 @@ Header stolen from  : Greig Sheridan who stole it from Pat Richard's amazing "Ge
 ## Update History
 
 **:v2.10: The Supportability Build**
-Added Script logging
-Updated to use my new autoupdate code
-Added ability to switch between devel/master branches
-Added timezone offset detection / warning
+* Added Script logging
+* Updated to use my new autoupdate code
+* Added ability to switch between devel/master branches
+* Added timezone offset detection / warning
+* Added TLS 1.2 support for the new Govt website requirements
 
 **:v2.01: The GitHub Build**
-Migrated to GitHub
-Minor Typo corrections
-Check for and prompt user for updates
-Fixed a bug with multiple pool selction
-Fixed issues with double spaced event names
-Added better timeout handling to XML downloads
-Added better user feedback when downloading XML file
-Fixed bug with proxy detection failing to execute
-Removed redundant code for XML lookup
-Fixed an unattended run bug
-Fixed commandline switch descriptions
+* Migrated to GitHub
+* Minor Typo corrections
+* Check for and prompt user for updates
+* Fixed a bug with multiple pool selction
+* Fixed issues with double spaced event names
+* Added better timeout handling to XML downloads
+* Added better user feedback when downloading XML file
+* Fixed bug with proxy detection failing to execute
+* Removed redundant code for XML lookup
+* Fixed an unattended run bug
+* Fixed commandline switch descriptions
 
 **:v2.00: The Automatic Build**
-Update for XML Support
-Added Autodetecton of single RGS pool
-Complete Rewrite of existing rule rewrite code, Should make less red text now.
-Added Region detection, Will prompt to change regions or try to use US date format
-More user friendly and better instructions
-Fixed a few typo's causing dates to be incorrect.
-Fixed a lot of gramatical errors
-Added XML download and implementation with proxy support
-Auto removes any dates not listed by the Australian Government (such as old dates) if the $RemoveExistingRules is set
-Script no longer deletes existing timeframes, No need to re-assign to workflows!
+* Update for XML Support
+* Added Autodetecton of single RGS pool
+* Complete Rewrite of existing rule rewrite code, Should make less red text now.
+* Added Region detection, Will prompt to change regions or try to use US date format
+* More user friendly and better instructions
+* Fixed a few typo's causing dates to be incorrect.
+* Fixed a lot of gramatical errors
+* Added XML download and implementation with proxy support
+* Auto removes any dates not listed by the Australian Government (such as old dates) if the $RemoveExistingRules is set
+* Script no longer deletes existing timeframes, No need to re-assign to workflows!
 
 **:v1.10: The First Bugfix**
-Fix for Typo in Victoria Holiday set
-Fix ForEach loop not correctly removing old time frames
-Fix Documentation not including the SID for ServiceID parameter
+* Fix for Typo in Victoria Holiday set
+* Fix ForEach loop not correctly removing old time frames
+* Fix Documentation not including the SID for ServiceID parameter
 
 **:v1.10: The Initial Release**   
-Initial Release
+* Initial Release
 
 
 ## LINK  

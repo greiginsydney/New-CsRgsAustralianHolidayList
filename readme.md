@@ -39,23 +39,23 @@ Added better timeout handling to XML downloads
 Added better user feedback when downloading XML file
 Fixed bug with proxy detection failing to execute
 Removed redundant code for XML lookup
-Fixed an unattened run bug
+Fixed an unattended run bug
 Fixed commandline switch descriptions
 
 **:v2.00: The Automatic Build**
 Update for XML Support
 Added Autodetecton of single RGS pool
-Complete Rewrite of existing rule rewrite code , Should make less red text now.
+Complete Rewrite of existing rule rewrite code, Should make less red text now.
 Added Region detection, Will prompt to change regions or try to use US date format
 More user friendly and better instructions
 Fixed a few typo's causing dates to be incorrect.
-Fixed alot of gramatical errors
+Fixed a lot of gramatical errors
 Added XML download and implementation with proxy support
 Auto removes any dates not listed by the Australian Government (such as old dates) if the $RemoveExistingRules is set
 Script no longer deletes existing timeframes, No need to re-assign to workflows!
 
 **:v1.10: The First Bugfix**
-Fix for Typo in Victora Holiday set
+Fix for Typo in Victoria Holiday set
 Fix ForEach loop not correctly removing old time frames
 Fix Documentation not including the SID for ServiceID parameter
 
@@ -87,8 +87,8 @@ If you dont specify a ServiceID or FrontEndPool, the script will try and guess t
 
 **PARAMETER FrontEndPool <FrontEnd FQDN>**
 Frontend Pool where the new holiday set will be hosted. 
-If you dont specify a ServiceID or FrontEndPool, the script will try and guess the frontend to put the holidays on.
-Specifiying this instead of ServiceID will cause the script to confirm the pool unless -Unattended is specified
+If you don't specify a ServiceID or FrontEndPool, the script will try and guess the frontend to put the holidays on.
+Specifying this instead of ServiceID will cause the script to confirm the pool unless -Unattended is specified
 
 **PARAMETER RGSPrepend <String>**
 String to Prepend to Listnames to suit your enviroment
@@ -113,10 +113,10 @@ New-CsRgsAustralianHolidayList.ps1 creates multiple new instances of the Microso
 
 
 ## Disclaimer					
-Whilst I take considerable effort to ensure this script is error free and wont harm your enviroment
+Whilst I take considerable effort to ensure this script is error free and wont harm your environment
 I have no way to test every possible senario it may be used in. I provide these scripts free
 to the Lync and Skype4B community AS IS without any warranty on its appropriateness for use in
-your enviroment. I disclaim all implied warranties including,
+your environment. I disclaim all implied warranties including,
 without limitation, any implied warranties of merchantability or of fitness for a particular
 purpose. The entire risk arising out of the use or performance of the sample scripts and
 documentation remains with you. In no event shall I be liable for any damages whatsoever
@@ -127,7 +127,7 @@ to use the script or documentation.
 								
 ## Acknowledgements
 ### Testing and Advice
-Greig Sheriden https://greiginsydney.com/about/ @greiginsydney
+Greig Sheridan https://greiginsydney.com/about/ @greiginsydney
 
 ### Auto Update Code
 Pat Richard http://www.ehloworld.com @patrichard

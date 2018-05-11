@@ -7,17 +7,25 @@
 	Created by James Arber. www.skype4badmin.com
 	Although every effort has been made to ensure this list is correct, dates change and sometimes I goof. 
 	Please use at your own risk.
-	Data taken from http://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays
+	Holiday Data taken from http://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays
 	    
 	
 .NOTES  
-    Version      	   	: 2.01
-	Date			    : 9/12/2017
+    Version      	   	: 2.10
+	Date			    : 31/3/2018
 	Lync Version		: Tested against Skype4B Server 2015 and Lync Server 2013
     Author    			: James Arber
 	Header stolen from  : Greig Sheridan who stole it from Pat Richard's amazing "Get-CsConnections.ps1"
 
-	Revision History	: v2.01: Migrated to GitHub
+	Revision History	: v2.1: Added Script logging
+                              : Updated to use my new autoupdate code
+                              : Added ability to switch between devel/master branches
+                              : Added timezone offset detection / warning
+							  : Added SSL support for the new Govt website requirements
+
+
+
+						: v2.01: Migrated to GitHub
                               : Minor Typo corrections
                               : Check for and prompt user for updates
                               : Fixed a bug with multiple pool selction
@@ -120,19 +128,59 @@ param(
 	[Parameter(Mandatory=$false, Position=3)] $FrontEndPool,
 	[Parameter(Mandatory=$false, Position=4)] [switch]$DisableScriptUpdate,
     [Parameter(Mandatory=$false, Position=4)] [switch]$Unattended,
-	[Parameter(Mandatory=$false, Position=5)] [switch]$RemoveExistingRules
+	[Parameter(Mandatory=$false, Position=5)] [switch]$RemoveExistingRules,
+	[Parameter(Mandatory=$false, Position=6)] [string]$LogFileLocation
 	)
 #region config
- 
+	[Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
     $MaxCacheAge = 7 # Max age for XML cache, older than this # days will force info refresh
 	$SessionCache = Join-Path $PSScriptRoot 'AustralianHolidays.xml' #Filename for the XML data
-	[single]$Version = "2.01"
+	If (!$LogFileLocation) {$LogFileLocation = $PSCommandPath -replace ".ps1",".log"}
+	[single]$ScriptVersion = "2.10"
+	[string]$GithubRepo = "New-CsRgsAustralianHolidayList"
+	[string]$GithubBranch = "devel" #todo
+	[string]$BlogPost = "http://www.skype4badmin.com/australian-holiday-rulesets-for-response-group-service/"
 #endregion config
 
 
-#region Fucntions
+#region Functions
+Function Write-Log {
+    PARAM(
+         [String]$Message,
+         [String]$Path = $LogFileLocation,
+         [int]$severity = 1,
+         [string]$component = "Default",
+		 [switch]$logonly
+			
+         )
+
+         $TimeZoneBias = Get-WmiObject -Query "Select Bias from Win32_TimeZone"
+         $Date= Get-Date -Format "HH:mm:ss"
+         $Date2= Get-Date -Format "MM-dd-yyyy"
+
+         $MaxLogFileSizeMB = 10
+         If(Test-Path $Path)
+         {
+            if(((gci $Path).length/1MB) -gt $MaxLogFileSizeMB) # Check the size of the log file and archive if over the limit.
+            {
+                $ArchLogfile = $Path.replace(".log", "_$(Get-Date -Format dd-MM-yyy_hh-mm-ss).lo_")
+                ren $Path $ArchLogfile
+            }
+         }
+         
+		 "$env:ComputerName date=$([char]34)$date2$([char]34) time=$([char]34)$date$([char]34) component=$([char]34)$component$([char]34) type=$([char]34)$severity$([char]34) Message=$([char]34)$Message$([char]34)"| Out-File -FilePath $Path -Append -NoClobber -Encoding default
+	 If (!$logonly) { #If LogOnly is set, we dont want to write anything to the screen as we are capturing data that might look bad onscreen
+         #If the log entry is just informational (less than 2), output it to write verbose
+		 if ($severity -le 2) {"Info: $Message"| Write-Host -ForegroundColor Green}
+		 #If the log entry has a severity of 3 assume its a warning and write it to write-warning
+		 if ($severity -eq 3) {"$date $Message"| Write-Warning}
+		 #If the log entry has a severity of 4 or higher, assume its an error and display an error message (Note, critical errors are caught by throw statements so may not appear here)
+		 if ($severity -ge 4) {"$date $Message"| Write-Error}
+		}
+	} #end WriteLog
+
 Function Get-IEProxy {
-	Write-Host "Info: Checking for proxy settings" -ForegroundColor Green
+	Write-Log "Checking for proxy settings" -severity 1
         If ( (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings').ProxyEnable -ne 0) {
             $proxies = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings').proxyServer
             if ($proxies) {
@@ -152,6 +200,65 @@ Function Get-IEProxy {
         }
     }
 
+Function Get-ScriptUpdate {
+	if ($DisableScriptUpdate -eq $false) {
+		Write-Log -component "Self Update" -Message "Checking for Script Update" -severity 1
+		Write-Log -component "Self Update" -Message "Checking for Proxy" -severity 1
+			$ProxyURL = Get-IEProxy
+		If ( $ProxyURL) {
+			Write-Log -component "Self Update" -Message "Using proxy address $ProxyURL" -severity 1
+		   }
+		Else {
+			Write-Log -component "Self Update" -Message "No proxy setting detected, using direct connection" -severity 1
+				}
+	  }
+	  $GitHubScriptVersion = Invoke-WebRequest "https://raw.githubusercontent.com/atreidae/$GitHubRepo/$GitHubBranch/version" -TimeoutSec 10 -Proxy $ProxyURL
+        If ($GitHubScriptVersion.Content.length -eq 0) {
+			Write-Log -component "Self Update" -Message "Error checking for new version. You can check manualy here" -severity 3
+			Write-Log -component "Self Update" -Message $BlogPost -severity 1
+			Write-Log -component "Self Update" -Message "Pausing for 5 seconds" -severity 1
+            start-sleep 5
+            }
+        else { 
+                if ([single]$GitHubScriptVersion.Content -gt [single]$ScriptVersion) {
+				Write-Log -component "Self Update" -Message "New Version Available" -severity 3
+                   #New Version available
+
+                    #Prompt user to download
+				$title = "Update Available"
+				$message = "an update to this script is available, did you want to download it?"
+
+				$yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", `
+					"Launches a browser window with the update"
+
+				$no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", `
+					"No thanks."
+
+				$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
+
+				$result = $host.ui.PromptForChoice($title, $message, $options, 0) 
+
+				switch ($result)
+					{
+						0 {
+							Write-Log -component "Self Update" -Message "User opted to download update" -severity 1
+							start $BlogPost #todo F
+							Write-Log -component "Self Update" -Message "Exiting Script" -severity 3
+							Exit
+						}
+						1 {Write-Log -component "Self Update" -Message "User opted to skip update" -severity 1
+									
+							}
+							
+					}
+                 }   
+                 Else{
+                 Write-Log -component "Self Update" -Message "Script is up to date on $GithubBranch branch" -severity 1
+                 }
+        
+	       }
+
+	}
 
 #endregion Functions
 
@@ -159,7 +266,19 @@ Function Get-IEProxy {
 
 
 #Define Listnames
-Write-Host "Info: New-CsRgsAustralianHolidayList.ps1 Version $version" -ForegroundColor Green
+Write-Log "New-CsRgsAustralianHolidayList.ps1 Version $scriptversion" -severity 1
+$cluture = (Get-Culture)
+$GMTOffset = (Get-TimeZone)
+Write-Log "Current system culture"
+Write-Log $Culture
+Write-Log "Current Timezone"
+Write-Log $GMTOffset
+Write-Log "Checking UTC Offset"
+If ($GMTOffset.BaseUtcOffset.Hours -lt 8) {
+	Write-Log "UTC Base offset less than +8 hours"
+	Write-log "Your timezone appears to be misconfigured. this script may not function as expected" -severity 3
+	pause}
+
 $National = $RGSPrepend+"National"
 $Vic = $RGSPrepend+"Victoria"
 $NSW = $RGSPrepend+"New South Wales"
@@ -182,70 +301,26 @@ $allstates += $WA
 $allstates += $TAS
 if ($Unattended) {$DisableScriptUpdate = $true}
 if ($RemoveExistingRules -eq $true) {
-	Write-Warning "RemoveExistingRules parameter set to True. Script will automatically delete existing entries from rules"
-    Write-Host "Info: Pausing for 5 seconds" -ForegroundColor Green
+	Write-log "RemoveExistingRules parameter set to True. Script will automatically delete existing entries from rules" -severity 3
+    Write-Log "Pausing for 5 seconds" -severity 1
     start-sleep 5
 	}
 #Get Proxy Details
 	    $ProxyURL = Get-IEProxy
     If ( $ProxyURL) {
-        Write-Host "Info: Using proxy address $ProxyURL" -ForegroundColor Green
+        Write-Log "Using proxy address $ProxyURL" -severity 1
     }
     Else {
-        Write-Host "Info: No proxy setting detected, using direct connection" -ForegroundColor Green
+        Write-Log "No proxy setting detected, using direct connection" -severity 1
     }
 
 if ($DisableScriptUpdate -eq $false) {
-	Write-Host "Info: Checking for Script Update" -ForegroundColor Green #todo
-    $GitHubScriptVersion = Invoke-WebRequest https://raw.githubusercontent.com/atreidae/New-CsRgsAustralianHolidayList/master/version -TimeoutSec 10 -Proxy $ProxyURL
-        If ($GitHubScriptVersion.Content.length -eq 0) {
-
-            Write-Warning "Error checking for new version. You can check manualy here"
-            Write-Warning "http://www.skype4badmin.com/australian-holiday-rulesets-for-response-group-service/"
-            Write-Host "Info: Pausing for 5 seconds" -ForegroundColor Green
-            start-sleep 5
-            }
-        else { 
-                if ([single]$GitHubScriptVersion.Content -gt [single]$version) {
-                 Write-Host "Info: New Version Available" -ForegroundColor Green
-                    #New Version available
-
-                    #Prompt user to download
-				$title = "Update Available"
-				$message = "an update to this script is available, did you want to download it?"
-
-				$yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", `
-					"Launches a browser window with the update"
-
-				$no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", `
-					"No thanks."
-
-				$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
-
-				$result = $host.ui.PromptForChoice($title, $message, $options, 0) 
-
-				switch ($result)
-					{
-						0 {Write-Host "Info: User opted to download update" -ForegroundColor Green
-							start "http://www.skype4badmin.com/australian-holiday-rulesets-for-response-group-service/"
-							Write-Warning "Exiting script"
-							Exit
-						}
-						1 {Write-Host "Info: User opted to skip update" -ForegroundColor Green
-							
-							}
-							
-					}
-                 }   
-                 Else{
-                 Write-Host "Info: Script is up to date" -ForegroundColor Green
-                 }
-        
-	       }
+	Write-Log "Checking for Script Update" -severity 1 #todo
+   Get-ScriptUpdate
 
 	}
 
-Write-Host "Info: Importing modules" -ForegroundColor Green
+Write-Log "Importing modules" -severity 1
 #$VerbosePreference="SilentlyContinue" #Stops powershell showing Every cmdlet it imports
 Import-Module Lync
 Import-module SkypeForBusiness
@@ -253,7 +328,7 @@ Import-module SkypeForBusiness
 
 
 
-Write-Host "Info: Checking for XML file" -ForegroundColor Green
+Write-Log "Checking for XML file" -severity 1
 
 
 #Check for XML file and download it 
@@ -261,48 +336,49 @@ Write-Host "Info: Checking for XML file" -ForegroundColor Green
     If ( Test-Path $SessionCache) {
         Try {
             If ( (Get-childItem -Path $SessionCache).LastWriteTime -ge (Get-Date).AddDays( - $MaxCacheAge)) {
-                Write-Host 'Info: XML file found. Reading data' -ForegroundColor Green
+                Write-Log 'XML file found. Reading data' -severity 1
                 [xml]$XMLdata = Get-Content -Path $SessionCache 
                 $EventCount = ($XMLdata.OuterXml | select-string "<event" -AllMatches)
                 $XMLCount = ($EventCount.Matches.Count)
-                Write-Host "Info: Imported file with $XMLCount event tags"  -ForegroundColor Green
+                Write-Log "Imported file with $XMLCount event tags"  -severity 1
                 if ($XMLCount -le 10) {
-                         Write-host "Info: Imported file doesnt appear to contain correct data"  -ForegroundColor Green
+                         Write-Log "Imported file doesnt appear to contain correct data"  -severity 1
                          throw "Imported file doesnt appear to contain correct data"
                          }
                 
                 $SessionCacheValid = $true
             }
             Else {
-                Write-Warning 'Info: XML file expired. Will re-download XML from website' -ForegroundColor Green
+                Write-log 'XML file expired. Will re-download XML from website' -severity 3
             }
         }
         Catch {
-            Write-Warning 'Error reading XML file or XML file invalid - Will re-download'
+            Write-log 'Error reading XML file or XML file invalid - Will re-download' -severity 3
         }
     }
 	 If ( -not( $SessionCacheValid)) {
 
-        Write-Host 'Info: Downloading Date list from Australian Government Website' -ForegroundColor Green
+        Write-Log 'Downloading Date list from Australian Government Website' -severity 1
         Try {
-	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-            Invoke-WebRequest -Uri 'http://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml' -TimeoutSec 20 -OutFile $SessionCache -Proxy $ProxyURL #-PassThru
-             Write-Host 'Info: XML file downloaded. Reading data' -ForegroundColor Green
+
+            Invoke-WebRequest -Uri 'https://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml' -TimeoutSec 20 -OutFile $SessionCache -Proxy $ProxyURL #-PassThru
+             Write-Log 'XML file downloaded. Reading data' -severity 1
+
                 [xml]$XMLdata = Get-Content -Path $SessionCache 
                 $EventCount = ($XMLdata.OuterXml | select-string "<event" -AllMatches)
                 $XMLCount = ($EventCount.Matches.Count)
-                Write-Host "Info: Imported file with $XMLCount event tags"  -ForegroundColor Green
+                Write-Log "Imported file with $XMLCount event tags"  -severity 1
                 if ($XMLCount -le 10) {
-                         Write-host "Info: Downloaded file doesnt appear to contain correct data"  -ForegroundColor Green
+                         Write-Log "Downloaded file doesnt appear to contain correct data"  -severity 1
                          throw "Imported file doesnt appear to contain correct data"
                          }
                 
                 $SessionCacheValid = $true
             }
         Catch {
-			Write-Warning "An error occurred attempting to download XML file automatically"
-			Write-Warning 'Download the file from the URI below, name it "AustralianHolidays.xml" and place it in the same folder as this script'
-			Write-host "http://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml" -ForegroundColor Blue
+			Write-log "An error occurred attempting to download XML file automatically" -severity 3
+			Write-log 'Download the file from the URI below, name it "AustralianHolidays.xml" and place it in the same folder as this script' -severity 3
+			Write-Log "https://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml" -ForegroundColor Blue
 			Throw ('Problem retrieving XML file {0}' -f $error[0])
             Exit 1
 			}
@@ -310,22 +386,23 @@ Write-Host "Info: Checking for XML file" -ForegroundColor Green
 
 
 
-Write-Host "Info: Gathering Front End Pool Data" -ForegroundColor Green
+Write-Log "Gathering Front End Pool Data" -severity 1
 $Pools = (Get-CsService -Registrar)
 
-Write-Host "Info: Checking Region Info" -ForegroundColor Green
+Write-Log "Checking Region Info" -severity 1
 $ConvertTime = $false
 $region = (Get-Culture)
 if ($region.Name -ne "en-AU") {
 	#We're not running en-AU region setting, Warn the user and prompt them to change
-	Write-Warning "This script is only supported on systems running the en-AU region culture"
-	Write-Warning "This is due to the way the New-CsRgsHoliday cmdlet processes date strings"
-	Write-Warning "More information is available at the url below"
-	Write-Warning "https://docs.microsoft.com/en-us/powershell/module/skype/new-csrgsholiday?view=skype-ps"
-	Write-Warning "The script will now prompt you to change regions. If you continue without changing regions I will output everything in US date format and hope for the best."
+	Write-log "This script is only supported on systems running the en-AU region culture" -severity 3
+	Write-log "This is due to the way the New-CsRgsHoliday cmdlet processes date strings" -severity 3
+	Write-log "More information is available at the url below" -severity 3
+	Write-log "https://docs.microsoft.com/en-us/powershell/module/skype/new-csrgsholiday?view=skype-ps" -severity 3
+	Write-log "The script will now prompt you to change regions. If you continue without changing regions I will output everything in US date format and hope for the best." -severity 3
 
 	
 	#Prompt user to switch culture
+	Write-Log "prompting user to change region"
 				$title = "Switch Windows Region?"
 				$message = "Update the Windows Region (Culture) to en-AU?"
 
@@ -341,13 +418,13 @@ if ($region.Name -ne "en-AU") {
 
 				switch ($result)
 					{
-						0 {Write-Host "Info: Updating System Culture" -ForegroundColor Green
+						0 {Write-Log "Updating System Culture" -severity 1
 							Set-Culture en-AU
-							Write-Warning "System Culture Updated, Script will exit."
-							Write-Warning "Close any PowerShell windows and run the script again"
+							Write-log "System Culture Updated, Script will exit." -severity 3
+							Write-log "Close any PowerShell windows and run the script again" -severity 3
 							Exit
 						}
-						1 {Write-Warning "Unsupported Region. Setting compatability mode"
+						1 {Write-log "Unsupported Region. Setting compatability mode" -severity 3
 							$ConvertTime = $true
 							}
 							
@@ -357,19 +434,19 @@ if ($region.Name -ne "en-AU") {
 
 
 
-Write-Host "Info: Parsing command line parameters" -ForegroundColor Green
+Write-Log "Parsing command line parameters" -severity 1
 
 # Detect and deal with null service ID
 If ($ServiceID -eq $null) {
-		Write-Warning "No ServiceID entered, Searching for valid ServiceID"
-		Write-Host "Info: Looking for Front End Pools" -ForegroundColor Green
+		Write-log "No ServiceID entered, Searching for valid ServiceID" -severity 3
+		Write-Log "Looking for Front End Pools" -severity 1
 		$PoolNumber = ($Pools).count
 		if ($PoolNumber -eq 1) { 
-			Write-Host "Info: Only found 1 Front End Pool, $Pools.poolfqdn, Selecting it" -ForegroundColor Green
+			Write-Log "Only found 1 Front End Pool, $Pools.poolfqdn, Selecting it" -severity 1
 			$RGSIDs = (Get-CsRgsConfiguration -Identity $pools.PoolFqdn)
 			$Poolfqdn = $Pools.poolfqdn
 			#Prompt user to confirm
-				Write-Host "Info: Found RGS Service ID $RGSIDs" -ForegroundColor Green
+				Write-Log "Found RGS Service ID $RGSIDs" -severity 1
 				$title = "Use this Front End Pool?"
 				$message = "Use the Response Group Server on $poolfqdn ?"
 
@@ -385,9 +462,9 @@ If ($ServiceID -eq $null) {
 
 				switch ($result)
 					{
-						0 {Write-Host "Info: Updating ServiceID parameter" -ForegroundColor Green
+						0 {Write-Log "Updating ServiceID parameter" -severity 1
 							$ServiceID = $RGSIDs.Identity.tostring()}
-						1 {Write-Warning "Couldn't Autolocate RGS pool. Aborting script"
+						1 {Write-log "Couldn't Autolocate RGS pool. Aborting script" -severity 3
 							Throw "Couldn't Autolocate RGS pool. Abort script"}
 							
 					}
@@ -397,11 +474,11 @@ If ($ServiceID -eq $null) {
 
 	Else {
 	#More than 1 Pool Detected and the user didnt specify anything
-	Write-Host "Info: Found $PoolNumber Front End Pools" -ForegroundColor Green
+	Write-Log "Found $PoolNumber Front End Pools" -severity 1
 	
 		If ($FrontEndPool -eq $null) {
-			Write-Host "Info: Prompting user to select Front End Pool" -ForegroundColor Green
-			Write-Warning "Couldn't Locate ServiceID or PoolFQDN on the command line and more than one Front End Pool was detected"
+			Write-Log "Prompting user to select Front End Pool" -severity 1
+			Write-log "Couldn't Locate ServiceID or PoolFQDN on the command line and more than one Front End Pool was detected" -severity 3
 			
 			#Menu code thanks to Grieg.
 			#First figure out the maximum width of the pools name (for the tabular menu):
@@ -423,7 +500,7 @@ If ($ServiceID -eq $null) {
 			Write-Host
 			Write-Host "Choose the Front End Pool you wish to use"
 			$chosen = read-host "Or any other value to quit"
-
+			Write-log "User input $chosen" -severity 1
 			if ($chosen -notmatch '^\d$') {Exit}
 			if ([int]$chosen -lt 0) {Exit}
 			if ([int]$chosen -gt $index) {Exit}
@@ -435,7 +512,7 @@ If ($ServiceID -eq $null) {
 
 	#User specified the pool at the commandline or we collected it earlier
 		
-	Write-Host "Info: Using Front End Pool $FrontendPool" -ForegroundColor Green
+	Write-Log "Using Front End Pool $FrontendPool" -severity 1
 	$RGSIDs = (Get-CsRgsConfiguration -Identity $FrontEndPool)
 	$Poolfqdn = $FrontEndPool
 
@@ -458,9 +535,9 @@ if (!$Unattended) {
 
 		switch ($result)
 			{
-				0 {Write-Host "Info: Updating ServiceID"  -ForegroundColor Green
+				0 {Write-Log "Updating ServiceID"  -severity 1
 					$ServiceID = $RGSIDs.Identity.tostring()}
-				1 {Write-Warning "Couldnt Autolocate RGS pool. Abort script"
+				1 {Write-log "Couldnt Autolocate RGS pool. Abort script" -severity 3
 					Throw "Couldnt Autolocate RGS pool. Abort script"}
 			}
         }
@@ -474,7 +551,7 @@ if (!$Unattended) {
  $removedsomething = $false
  $alreadyexists = $false
 
-Write-Host "Info: Parsing XML data" -ForegroundColor Green
+Write-Log "Parsing XML data" -severity 1
 foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
     switch ($state.jurisdictionName) 
       { 
@@ -504,19 +581,19 @@ foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
        }
   
 
-    Write-Host "Info: Processing events in $statename" -ForegroundColor Green
+    Write-Log "Processing events in $statename" -severity 1
     #Find and clear the existing RGS Object
     try {
-	    Write-Host "Info: Checking for existing $StateName Holiday Set" -ForegroundColor Green
+	    Write-Log "Checking for existing $StateName Holiday Set" -severity 1
 	    $holidayset = (Get-CsRgsHolidaySet -Name "$StateName")
-	    Write-host "Info: Removing old entries from $StateName" -ForegroundColor Green
+	    Write-Log "Removing old entries from $StateName" -severity 1
 	    $holidayset.HolidayList.clear()
-		Write-Host "Info: Existing entries from Holiday Set $StateName removed" -ForegroundColor Green
+		Write-Log "Existing entries from Holiday Set $StateName removed" -severity 1
 		}
-	catch {Write-Host "Info: Didnt find $StateName Holiday Set. Creating" -ForegroundColor Green
+	catch {Write-Log "Didnt find $StateName Holiday Set. Creating" -severity 1
         $PlaceholderDate = (New-CsRgsHoliday -StartDate "11/11/1970 12:00 AM" -EndDate "12/11/1970 12:00 AM" -Name "Placeholder. Shouldnt Exist")
         $holidayset = (New-CsRgsHolidaySet -Parent $ServiceID -Name "$Statename" -HolidayList $PlaceholderDate -ErrorAction silentlycontinue)
-        Write-Host "Info: Removing Placeholder Date" -ForegroundColor Green
+        Write-Log "Removing Placeholder Date" -severity 1
         $holidayset.HolidayList.clear()            
         }
  
@@ -542,17 +619,18 @@ foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
          $CurrentEvent = (New-CsRgsHoliday -StartDate "$StartDate 12:00 AM" -EndDate "$EndDate 12:00 AM" -Name "$StateName $EventName")
          #$CurrentEvent
         #add it to the variable.
-        Write-host "Info: Adding $EventName to $StateName" -ForegroundColor Green
+        Write-Log "Adding $EventName to $StateName" -severity 1
         $HolidaySet.HolidayList.Add($CurrentEvent)
         }
-		Write-Host "Info: Finished adding events" -ForegroundColor Green
-        Write-host "Info: Writing $StateName to Database" -ForegroundColor Green
+		Write-Log "Finished adding events" -severity 1
+        Write-Log "Writing $StateName to Database" -severity 1
         Try {Set-CsRgsHolidaySet -Instance $holidayset}
-            Catch {Write-Warning "Something went wrong attempting to commit holidayset to database"
-			$ErrorMessage = $_.Exception.Message
-			$FailedItem = $_.Exception.ItemName
-			Write-host "$FailedItem failed. The error message was $ErrorMessage" -ForegroundColor Red
-			Throw $errormessage}
+
+        Catch {Write-log "Something went wrong attempting to commit holidayset to database" -severity 3
+			    $ErrorMessage = $_.Exception.Message
+			    $FailedItem = $_.Exception.ItemName
+			    Write-Log "$FailedItem failed. The error message was $ErrorMessage" -severity 4
+			    Throw $errormessage}
                
 }
 
@@ -560,22 +638,22 @@ foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
 #Okay, now deal with National Holidays
 
  try {
-	    Write-Host "Info: Checking for existing $National Holiday Set" -ForegroundColor Green
+	    Write-Log "Checking for existing $National Holiday Set" -severity 1
 	    $holidayset = (Get-CsRgsHolidaySet -Name "$National")
-	    Write-host "Info: Removing old entries from $National" -ForegroundColor Green
+	    Write-Log "Removing old entries from $National" -severity 1
 	    $holidayset.HolidayList.clear()
-		Write-Host "Info: Existing entries from Holiday Set $National removed" -ForegroundColor Green
+		Write-Log "Existing entries from Holiday Set $National removed" -severity 1
 		}
-	catch {Write-Host "Info: Didnt find $National Holiday Set. Creating" -ForegroundColor Green
+	catch {Write-Log "Didnt find $National Holiday Set. Creating" -severity 1
         $PlaceholderDate = (New-CsRgsHoliday -StartDate "11/11/1970 12:00 AM" -EndDate "12/11/1970 12:00 AM" -Name "Placeholder. Shouldnt Exist")
         $holidayset = (New-CsRgsHolidaySet -Parent $ServiceID -Name "$National" -HolidayList $PlaceholderDate -ErrorAction silentlycontinue)
-        Write-Host "Info: Removing Placeholder Date" -ForegroundColor Green
+        Write-Log "Removing Placeholder Date" -severity 1
         $holidayset.HolidayList.clear()            
         }
 
 #Find dates that are in every state
 
- Write-Host "Info: Finding National Holidays (This can take a while)" -ForegroundColor Green
+ Write-Log "Finding National Holidays (This can take a while)" -severity 1
 $i =0
 $RawNatHolidayset = $null
 $NatHolidayset = $null
@@ -616,23 +694,25 @@ foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
                                  }
                                  
                             #Create the event in Skype format
-                            Write-Host "Info: Found $EventName" -ForegroundColor Green
+                            Write-Log "Found $EventName" -severity 1
                              $EventName = ($event.holidayTitle)      
                              $CurrentEvent = (New-CsRgsHoliday -StartDate "$StartDate 12:00 AM" -EndDate "$EndDate 12:00 AM" -Name "$StateName $EventName")
                              $HolidaySet.HolidayList.Add($CurrentEvent)
              }
 
 }
- Write-Host "Info: Finished adding events" -ForegroundColor Green
- Write-host "Info: Writing $National to Database" -ForegroundColor Green
+ Write-Log "Finished adding events" -severity 1
+ Write-Log "Writing $National to Database" -severity 1
  Try {Set-CsRgsHolidaySet -Instance $holidayset}
-            Catch {Write-Warning "Something went wrong attempting to commit holidayset to database"
+            Catch {Write-log "Something went wrong attempting to commit holidayset to database" -severity 3
 			$ErrorMessage = $_.Exception.Message
 			$FailedItem = $_.Exception.ItemName
-			Write-host "$FailedItem failed. The error message was $ErrorMessage" -ForegroundColor Red
+			Write-Log "$FailedItem failed. The error message was $ErrorMessage" -ForegroundColor Red
 			Throw $errormessage}
 
-Write-Host ""
-Write-Host ""
-Write-Host "Info: Looks like everything went okay. Here are your current RGS Holiday Sets" -ForegroundColor Green
+
+
+Write-Log ""
+Write-Log ""
+Write-Log "Looks like everything went okay. Here are your current RGS Holiday Sets" -severity 1
 Get-CsRgsHolidaySet | select name

@@ -360,8 +360,10 @@ Write-Log "Checking for XML file" -severity 1
 
         Write-Log 'Downloading Date list from Australian Government Website' -severity 1
         Try {
-            Invoke-WebRequest -Uri 'https://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml' -TimeoutSec 20 -OutFile $SessionCache -Proxy $ProxyURL -PassThru
+
+            Invoke-WebRequest -Uri 'https://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays/xml' -TimeoutSec 20 -OutFile $SessionCache -Proxy $ProxyURL #-PassThru
              Write-Log 'XML file downloaded. Reading data' -severity 1
+
                 [xml]$XMLdata = Get-Content -Path $SessionCache 
                 $EventCount = ($XMLdata.OuterXml | select-string "<event" -AllMatches)
                 $XMLCount = ($EventCount.Matches.Count)
@@ -623,11 +625,12 @@ foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
 		Write-Log "Finished adding events" -severity 1
         Write-Log "Writing $StateName to Database" -severity 1
         Try {Set-CsRgsHolidaySet -Instance $holidayset}
-            Catch {Write-log "Something went wrong attempting to commit holidayset to datebase" -severity 3
-			$ErrorMessage = $_.Exception.Message
-			$FailedItem = $_.Exception.ItemName
-			Write-Log "$FailedItem failed. The error message was $ErrorMessage" -severity 4
-			Throw $errormessage}
+
+        Catch {Write-log "Something went wrong attempting to commit holidayset to database" -severity 3
+			    $ErrorMessage = $_.Exception.Message
+			    $FailedItem = $_.Exception.ItemName
+			    Write-Log "$FailedItem failed. The error message was $ErrorMessage" -severity 4
+			    Throw $errormessage}
                
 }
 
@@ -706,6 +709,8 @@ foreach ($State in $XMLData.ausgovEvents.jurisdiction) {
 			$FailedItem = $_.Exception.ItemName
 			Write-Log "$FailedItem failed. The error message was $ErrorMessage" -ForegroundColor Red
 			Throw $errormessage}
+
+
 
 Write-Log ""
 Write-Log ""

@@ -19,9 +19,10 @@
 
     Revision History	: v2.2: Cleaned Up Code
                       : Fixed a bug with logging system culture
-                      : Removed old redundant code
-                      : Passed script throug ISESteriods and PSSharper
-                      : 
+                      : Removed some old redundant code
+                      : Passed script through ISESteriods PSSharper and applied corrections
+                      : Fixed a few typos
+                      : Updated Pat Richard's website
                        
 
                     : v2.1: Added Script logging
@@ -63,7 +64,7 @@
                         
                     : v1.0: Initial Release
 						
-    Disclaimer:   Whilst I take considerable effort to ensure this script is error free and wont harm your enviroment.
+    Disclaimer: Whilst I take considerable effort to ensure this script is error free and wont harm your enviroment.
                 I have no way to test every possible senario it may be used in. I provide these scripts free
                 to the Lync and Skype4B community AS IS without any warranty on its appropriateness for use in
                 your enviroment. I disclaim all implied warranties including,
@@ -148,7 +149,7 @@ param(
   If (!$LogFileLocation) {$LogFileLocation = $PSCommandPath -replace '.ps1','.log'}
   [float]$ScriptVersion = '2.2'
   [string]$GithubRepo = 'New-CsRgsAustralianHolidayList'
-  [string]$GithubBranch = 'devl' #todo
+  [string]$GithubBranch = 'master' #todo
   [string]$BlogPost = 'http://www.skype4badmin.com/australian-holiday-rulesets-for-response-group-service/'
 #endregion config
 

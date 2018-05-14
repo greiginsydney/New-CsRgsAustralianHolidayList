@@ -79,7 +79,7 @@
              Greig Sheriden https://greiginsydney.com/about/ @greiginsydney
 
          : Auto Update Code
-             Pat Richard http://www.ehloworld.com @patrichard
+             Pat Richard https://ucunleashed.com @patrichard
 
          : Proxy Detection
              Michel de Rooij	http://eightwone.com
@@ -193,24 +193,17 @@ Function Write-Log {
       .OUTPUTS
       This function does not create pipelined output
   #>
-  #Requires -Version 3
-  #Requires -Module Lync
-
-
     [CmdletBinding()]
     PARAM(
-         [String]$Message,
-         [String]$Path = $LogFileLocation,
-         [int]$severity = 1,
-         [string]$component = 'Default',
-     [switch]$logonly
-			
-         )
-
-         
-         $Date= Get-Date -Format 'HH:mm:ss'
-         $Date2= Get-Date -Format 'MM-dd-yyyy'
-         $MaxLogFileSizeMB = 10
+        [String]$Message,
+        [String]$Path = $LogFileLocation,
+        [int]$severity = 1,
+        [string]$component = 'Default',
+        [switch]$logonly
+		  )
+    $Date= Get-Date -Format 'HH:mm:ss'
+    $Date2= Get-Date -Format 'MM-dd-yyyy'
+    $MaxLogFileSizeMB = 10
          If(Test-Path -Path $Path)
          {
             if(((Get-ChildItem -Path $Path).length/1MB) -gt $MaxLogFileSizeMB) # Check the size of the log file and archive if over the limit.
@@ -221,13 +214,13 @@ Function Write-Log {
          }
          
      "$env:ComputerName date=$([char]34)$date2$([char]34) time=$([char]34)$date$([char]34) component=$([char]34)$component$([char]34) type=$([char]34)$severity$([char]34) Message=$([char]34)$Message$([char]34)"| Out-File -FilePath $Path -Append -NoClobber -Encoding default
-   If (!$logonly) { #If LogOnly is set, we dont want to write anything to the screen as we are capturing data that might look bad onscreen
-         #If the log entry is just informational (less than 2), output it to write verbose
-     if ($severity -le 2) {"Info: $Message"| Write-Host -ForegroundColor Green}
-     #If the log entry has a severity of 3 assume its a warning and write it to write-warning
-     if ($severity -eq 3) {"$date $Message"| Write-Warning}
-     #If the log entry has a severity of 4 or higher, assume its an error and display an error message (Note, critical errors are caught by throw statements so may not appear here)
-     if ($severity -ge 4) {"$date $Message"| Write-Error}
+    If (!$logonly) { #If LogOnly is set, we dont want to write anything to the screen as we are capturing data that might look bad onscreen
+      #If the log entry is just informational (less than 2), output it to write verbose
+      if ($severity -le 2) {"Info: $Message"| Write-Host -ForegroundColor Green}
+      #If the log entry has a severity of 3 assume its a warning and write it to write-warning
+      if ($severity -eq 3) {"$date $Message"| Write-Warning}
+      #If the log entry has a severity of 4 or higher, assume its an error and display an error message (Note, critical errors are caught by throw statements so may not appear here)
+      if ($severity -ge 4) {"$date $Message"| Write-Error}
     }
   } #end WriteLog
 
@@ -318,9 +311,6 @@ Function Get-ScriptUpdate {
 #endregion Functions
 
 
-
-
-#Define Listnames
 Write-Log -Message "New-CsRgsAustralianHolidayList.ps1 Version $scriptversion" -severity 1
 $culture = (Get-Culture)
 $GMTOffset = (Get-WmiObject -Query 'Select Bias from Win32_TimeZone')

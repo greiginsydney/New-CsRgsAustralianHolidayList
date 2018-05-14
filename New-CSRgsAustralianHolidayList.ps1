@@ -23,6 +23,7 @@
                       : Passed script through ISESteriods PSSharper and applied corrections
                       : Fixed a few typos
                       : Updated Pat Richard's website
+                      : Removed PowerShell 5.1 cmdlet (Get-Timezone), using a WMI query instead
                        
 
                     : v2.1: Added Script logging
@@ -318,7 +319,7 @@ $GMTOffset = (Get-WmiObject -Query 'Select Bias from Win32_TimeZone')
 Write-Log -Message 'Current system culture'
 Write-Log -Message $Culture
 Write-Log -Message 'Current Timezone'
-Write-Log -Message $GMTOffset
+Write-Log -Message $GMTOffset.bias
 Write-Log -Message 'Checking UTC Offset'
 If ($GMTOffset.bias -lt 480) {
   Write-Log -Message 'UTC Base offset less than +8 hours'

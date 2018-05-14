@@ -12,7 +12,7 @@
 	
 .NOTES  
     Version      	      : 2.2
-    Date			          : 11/05/2018
+    Date			          : 14/05/2018
     Lync Version		    : Tested against Skype4B Server 2015 and Lync Server 2013
     Author    			    : James Arber
     Header stolen from  : Greig Sheridan who stole it from Pat Richard's amazing "Get-CsConnections.ps1"
@@ -132,7 +132,6 @@
 #>
 # Script Config
 #Requires -Version 3
-#Requires -Modules SkypeforBusiness
 [CmdletBinding(DefaultParametersetName='Common')]
 param(
   [Parameter(Position=1)] [string]$ServiceID,

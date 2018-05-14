@@ -4,19 +4,21 @@ This script creates RGS holidaysets for Australian states based on live data fro
 
 ## DESCRIPTION  
 Created by James Arber. www.skype4badmin.com
+
 Although every effort has been made to ensure this list is correct, dates change and sometimes I goof. 
 Please use at your own risk.
+
 Holiday Data taken from http://www.australia.gov.au/about-australia/special-dates-and-events/public-holidays
 	    
 	
 ## NOTES  
- Version      	   	: 2.10
+Version  	         	: 2.20
 
-Date			    : 11/05/2018
+Date      			    : 11/05/2018
 
-Lync Version		: Tested against Skype4B Server 2015 and Lync Server 2013
+Lync Version	      : Tested against Skype4B Server 2015 and Lync Server 2013
 
-Author    			: James Arber
+Author    		      : James Arber
 
 Header stolen from  : Greig Sheridan who stole it from Pat Richard's amazing "Get-CsConnections.ps1"
 

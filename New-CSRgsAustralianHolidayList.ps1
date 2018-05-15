@@ -37,23 +37,23 @@
     : v2.01: Migrated to GitHub
     : Minor Typo corrections
     : Check for and prompt user for updates
-    : Fixed a bug with multiple pool selction
+    : Fixed a bug with multiple pool selection
     : Fixed issues with double spaced event names
     : Added better timeout handling to XML downloads
     : Added better user feedback when downloading XML file
     : Fixed bug with proxy detection failing to execute
     : Removed redundant code for XML lookup
-    : Fixed an unattened run bug
+    : Fixed an unattended run bug
     : Fixed commandline switch descriptions
 
 
     : v2.0: Update for XML Support
     : Added Autodetecton of single RGS pool
-    : Complete Rewrite of existing rule rewrite code , Should make less red text now.
+    : Complete Rewrite of existing rule rewrite code, Should make less red text now.
     : Added Region detection, Will prompt to change regions or try to use US date format
     : More user friendly and better instructions
     : Fixed a few typo's causing dates to be incorrect.
-    : Fixed alot of gramatical errors
+    : Fixed alot of grammatical errors
     : Added XML download and implementation with proxy support
     : Auto removes any dates not listed by the Australian Government (such as old dates) if the $RemoveExistingRules is set
     : Script no longer deletes existing timeframes, No need to re-assign to workflows!
@@ -68,7 +68,7 @@
     Disclaimer: Whilst I take considerable effort to ensure this script is error free and wont harm your enviroment.
     I have no way to test every possible senario it may be used in. I provide these scripts free
     to the Lync and Skype4B community AS IS without any warranty on its appropriateness for use in
-    your enviroment. I disclaim all implied warranties including,
+    your environment. I disclaim all implied warranties including,
     without limitation, any implied warranties of merchantability or of fitness for a particular
     purpose. The entire risk arising out of the use or performance of the sample scripts and
     documentation remains with you. In no event shall I be liable for any damages whatsoever
@@ -78,7 +78,7 @@
 
     Acknowledgements 	
     : Testing and Advice
-    Greig Sheriden https://greiginsydney.com/about/ @greiginsydney
+    Greig Sheridan https://greiginsydney.com/about/ @greiginsydney
 
     : Auto Update Code
     Pat Richard https://ucunleashed.com @patrichard
@@ -104,8 +104,8 @@
     Specifiying this instead of ServiceID will cause the script to confirm the pool unless -Unattended is specified
 
     .PARAMETER -RGSPrepend <String>
-    String to Prepend to Listnames to suit your enviroment
-
+    String to Prepend to Listnames to suit your environment
+i
     .PARAMETER -DisableScriptUpdate
     Stops the script from checking online for an update and prompting the user to download. Ideal for scheduled tasks
 
@@ -162,10 +162,10 @@ Function Write-Log
 {
   <#
       .SYNOPSIS
-      Fucntion to output messages to the console based on their severity and create log files
+      Function to output messages to the console based on their severity and create log files
 
       .DESCRIPTION
-      Add a more complete description of what the function does.
+      It's a logger.
 
       .PARAMETER Message
       The message to write
@@ -174,7 +174,7 @@ Function Write-Log
       The location of the logfile.
 
       .PARAMETER severity
-      Sets the sevirity of the log message, Higher severitys will call Write-Warning or Write-Error
+      Sets the severity of the log message, Higher severities will call Write-Warning or Write-Error
 
       .PARAMETER component
       Used to track the module or function that called "Write-Log" 
@@ -222,7 +222,7 @@ Function Write-Log
   If (!$logonly) 
   {
     #If LogOnly is set, we dont want to write anything to the screen as we are capturing data that might look bad onscreen
-    #If the log entry is just informational (less than 2), output it to write verbose
+    #If the log entry is just informational (less than 2), output it to write-host
     if ($severity -le 2) 
     {
       "Info: $Message"| Write-Host -ForegroundColor Green
@@ -287,7 +287,7 @@ Function Get-ScriptUpdate
   $GitHubScriptVersion = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/atreidae/$GithubRepo/$GithubBranch/version" -TimeoutSec 10 -Proxy $ProxyURL
   If ($GitHubScriptVersion.Content.length -eq 0) 
   {
-    Write-Log -component 'Self Update' -Message 'Error checking for new version. You can check manualy here' -severity 3
+    Write-Log -component 'Self Update' -Message 'Error checking for new version. You can check manually here' -severity 3
     Write-Log -component 'Self Update' -Message $BlogPost -severity 1
     Write-Log -component 'Self Update' -Message 'Pausing for 5 seconds' -severity 1
     Start-Sleep -Seconds 5
@@ -566,7 +566,7 @@ If ($ServiceID -eq $null)
       Write-Log -Message 'Prompting user to select Front End Pool' -severity 1
       Write-Log -Message "Couldn't Locate ServiceID or PoolFQDN on the command line and more than one Front End Pool was detected" -severity 3
 			
-      #Menu code thanks to Grieg.
+      #Menu code thanks to Greig.
       #First figure out the maximum width of the pools name (for the tabular menu):
       $width = 0
       foreach ($Pool in ($Pools)) 
@@ -602,9 +602,9 @@ If ($ServiceID -eq $null)
       {
         Exit
       }
-      $FrontEndPool = $Pools[$chosen].PoolFqdn
-      $Poolfqdn = $FrontEndPool
-      $RGSIDs = (Get-CsRgsConfiguration -Identity $FrontEndPool)
+      $FrontEndPool = $Pools[$chosen].PoolFqdn 
+      $Poolfqdn = $FrontEndPool #JamesA: same here
+      $RGSIDs = (Get-CsRgsConfiguration -Identity $FrontEndPool) #JamesA: is this line redundant, as all code paths run the same line below?
     }
 
 

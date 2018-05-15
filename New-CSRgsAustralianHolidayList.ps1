@@ -710,7 +710,7 @@ foreach ($State in $XMLdata.ausgovEvents.jurisdiction)
   try 
   {
     Write-Log -Message "Checking for existing $StateName Holiday Set" -severity 1
-    $holidayset = (Get-CsRgsHolidaySet -Name "$StateName")
+    $holidayset = (Get-CsRgsHolidaySet -Name "$StateName" -owner $ServiceID)
     Write-Log -Message "Removing old entries from $StateName" -severity 1
     $holidayset.HolidayList.clear()
     Write-Log -Message "Existing entries from Holiday Set $StateName removed" -severity 1

@@ -514,7 +514,7 @@ if ($region.Name -ne 'en-AU')
 Write-Log -Message 'Parsing command line parameters' -severity 1
 
 # Detect and deal with null service ID
-If ($ServiceID -eq $null) 
+If ($ServiceID.length -eq 0) 
 {
   Write-Log -Message 'No ServiceID entered, Searching for valid ServiceID' -severity 3
   Write-Log -Message 'Looking for Front End Pools' -severity 1

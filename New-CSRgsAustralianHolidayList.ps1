@@ -22,8 +22,12 @@
     : Removed some old redundant code
     : Passed script through ISESteriods PSSharper and applied corrections
     : Fixed a few typos
+    : Fixed a few bugs introduced cleaning up my dodgy code
+    : Fixed a bug with multiple pools using the same holiday set names
+    : Depricated the ServiceID parameter, Specify the pool FQDN instead
+    : Added warning for deprecated ServiceID
     : Updated Pat Richard's website
-    : Removed PowerShell 5.1 cmdlet (Get-Timezone), using a WMI query instead
+    : Removed PowerShell 5.1 cmdlet (Get-Timezone), now using a WMI query instead
                        
 
     : v2.1: Added Script logging
@@ -514,6 +518,9 @@ if ($region.Name -ne 'en-AU')
 Write-Log -Message 'Parsing command line parameters' -severity 1
 
 # Detect and deal with null service ID
+
+
+
 If ($ServiceID.length -eq 0) 
 {
   Write-Log -Message 'No ServiceID entered, Searching for valid ServiceID' -severity 3
@@ -561,7 +568,7 @@ If ($ServiceID.length -eq 0)
     #More than 1 Pool Detected and the user didnt specify anything
     Write-Log -Message "Found $PoolNumber Front End Pools" -severity 1
 	
-    If ($FrontEndPool -eq $null) 
+    If ($FrontEndPool.length -eq 0) 
     {
       Write-Log -Message 'Prompting user to select Front End Pool' -severity 1
       Write-Log -Message "Couldn't Locate ServiceID or PoolFQDN on the command line and more than one Front End Pool was detected" -severity 3
@@ -648,6 +655,15 @@ If ($ServiceID.length -eq 0)
     }
   }
 }
+Else
+{
+Write-Log -Message 'ServiceID parameter detected, display warning' -severity 1
+Write-Log -Message 'The ServiceID parameter is being deprecated. Please use the FrontEndPool parameter instead.' -severity 3
+Write-Log -Message 'If you have Multiple Frontend Pools that use the same Holiday set names you MUST use the FrontEndPool parameter' -severity 3
+Write-Log -Message 'Pausing for 10 seconds' -severity 1
+start-sleep -Seconds 10
+}
+
 #We should have a valid service ID by now
 
 Write-Log -Message 'Parsing XML data' -severity 1
@@ -710,7 +726,7 @@ foreach ($State in $XMLdata.ausgovEvents.jurisdiction)
   try 
   {
     Write-Log -Message "Checking for existing $StateName Holiday Set" -severity 1
-    $holidayset = (Get-CsRgsHolidaySet -Name "$StateName" -owner $ServiceID)
+    $holidayset = (Get-CsRgsHolidaySet -Name "$StateName" | where {$_.ownerpool -like $FrontEndPool})
     Write-Log -Message "Removing old entries from $StateName" -severity 1
     $holidayset.HolidayList.clear()
     Write-Log -Message "Existing entries from Holiday Set $StateName removed" -severity 1
@@ -774,7 +790,7 @@ foreach ($State in $XMLdata.ausgovEvents.jurisdiction)
 try 
 {
   Write-Log -Message "Checking for existing $National Holiday Set" -severity 1
-  $holidayset = (Get-CsRgsHolidaySet -Name "$National")
+  $holidayset = (Get-CsRgsHolidaySet -Name "$National" | where {$_.ownerpool -like $FrontEndPool})
   Write-Log -Message "Removing old entries from $National" -severity 1
   $holidayset.HolidayList.clear()
   Write-Log -Message "Existing entries from Holiday Set $National removed" -severity 1
@@ -855,10 +871,7 @@ Catch
   Write-Log -Message "$FailedItem failed. The error message was $ErrorMessage" -ForegroundColor Red
   Throw $ErrorMessage
 }
-
-
-
-Write-Log -Message ''
-Write-Log -Message ''
+Write-Host ''
+Write-Host ''
 Write-Log -Message 'Looks like everything went okay. Here are your current RGS Holiday Sets' -severity 1
-Get-CsRgsHolidaySet | Select-Object -Property name
+Get-CsRgsHolidaySet | Select-Object -Property OwnerPool, Name

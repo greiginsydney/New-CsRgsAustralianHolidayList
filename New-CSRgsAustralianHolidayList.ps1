@@ -610,8 +610,8 @@ If ($ServiceID.length -eq 0)
         Exit
       }
       $FrontEndPool = $Pools[$chosen].PoolFqdn 
-      $Poolfqdn = $FrontEndPool #JamesA: same here
-      $RGSIDs = (Get-CsRgsConfiguration -Identity $FrontEndPool) #JamesA: is this line redundant, as all code paths run the same line below?
+      $Poolfqdn = $FrontEndPool 
+      $RGSIDs = (Get-CsRgsConfiguration -Identity $FrontEndPool) 
     }
 
 

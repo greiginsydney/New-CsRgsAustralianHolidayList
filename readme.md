@@ -14,7 +14,7 @@ Holiday Data taken from http://www.australia.gov.au/about-australia/special-date
 ## NOTES  
 Version  	         	: 2.20
 
-Date      			    : 11/05/2018
+Date      			    : 19/05/2018
 
 Lync Version	      : Tested against Skype4B Server 2015 and Lync Server 2013
 

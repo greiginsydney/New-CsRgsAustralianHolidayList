@@ -12,12 +12,13 @@
 	
     .NOTES  
     Version      	      : 2.2
-    Date			          : 14/05/2018
-    Lync Version		    : Tested against Skype4B Server 2015 and Lync Server 2013
-    Author    			    : James Arber
-    Header stolen from  : Greig Sheridan who stole it from Pat Richard's amazing "Get-CsConnections.ps1"
+    Date			      : 19/05/2018
+    Lync Version		  : Tested against Skype4B Server 2015 and Lync Server 2013
+    Author    			  : James Arber
+    Header stolen from    : Greig Sheridan who stole it from Pat Richard's amazing "Get-CsConnections.ps1"
 
-    Revision History	: v2.2: Cleaned Up Code
+    Revision History	
+    : v2.2: Cleaned Up Code
     : Fixed a bug with logging system culture
     : Removed some old redundant code
     : Passed script through ISESteriods PSSharper and applied corrections
@@ -109,7 +110,7 @@
 
     .PARAMETER -RGSPrepend <String>
     String to Prepend to Listnames to suit your environment
-i
+
     .PARAMETER -DisableScriptUpdate
     Stops the script from checking online for an update and prompting the user to download. Ideal for scheduled tasks
 

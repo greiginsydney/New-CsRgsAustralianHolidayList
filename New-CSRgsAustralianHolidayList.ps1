@@ -25,18 +25,17 @@
     : Fixed a few typos
     : Fixed a few bugs introduced cleaning up my dodgy code
     : Fixed a bug with multiple pools using the same holiday set names
-    : Depricated the ServiceID parameter, Specify the pool FQDN instead
+    : Deprecated the ServiceID parameter, Specify the pool FQDN instead
     : Added warning for deprecated ServiceID
     : Updated Pat Richard's website
     : Removed PowerShell 5.1 cmdlet (Get-Timezone), now using a WMI query instead
-                       
+
 
     : v2.1: Added Script logging
     : Updated to use my new autoupdate code
     : Added ability to switch between devel/master branches
     : Added timezone offset detection / warning
     : Added SSL support for the new Govt website requirements
-
 
 
     : v2.01: Migrated to GitHub
@@ -762,6 +761,7 @@ foreach ($State in $XMLdata.ausgovEvents.jurisdiction)
     #Create the event in Skype format
     $EventName = ($event.holidayTitle)      
     $EventName = ($EventName -replace '  ' , ' ') #Remove Double Spaces in eventname
+    $EventName = $EventName.Trim()		  #Remove any leading or trailing whitespace
     $CurrentEvent = (New-CsRgsHoliday -StartDate "$StartDate 12:00 AM" -EndDate "$EndDate 12:00 AM" -Name "$StateName $EventName")
     #$CurrentEvent
     #add it to the variable.
@@ -853,7 +853,9 @@ ForEach($Uniquedate in $NatHolidayset)
                                  
     #Create the event in Skype format
     Write-Log -Message "Found $EventName" -severity 1
-    $EventName = ($event.holidayTitle)      
+    $EventName = ($event.holidayTitle)
+    $EventName = ($EventName -replace '  ' , ' ') #Remove Double Spaces in eventname
+    $EventName = $EventName.Trim()		  #Remove any leading or trailing whitespace
     $CurrentEvent = (New-CsRgsHoliday -StartDate "$StartDate 12:00 AM" -EndDate "$EndDate 12:00 AM" -Name "$StateName $EventName")
     $holidayset.HolidayList.Add($CurrentEvent)
   }
